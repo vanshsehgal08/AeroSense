@@ -32,11 +32,8 @@ instance/
 *.pkl
 *.joblib
 model_info.json
-vectorizer.pkl
-model.pkl
 
 # Model cache
-models_cache/
 models/
 
 # Processed files
@@ -64,6 +61,7 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+tfidf_features.csv
 
 # Logs
 *.log
