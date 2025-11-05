@@ -1,0 +1,307 @@
+.model-interpretability {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.model-interpretability h2 {
+  color: #333;
+  margin-bottom: 8px;
+  font-size: 24px;
+}
+
+.subtitle {
+  color: #666;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.interpretability-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.interpret-tabs {
+  display: flex;
+  gap: 12px;
+}
+
+.interpret-tab {
+  padding: 12px 24px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.interpret-tab:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.interpret-tab.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.explain-section,
+.features-section {
+  padding: 24px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+.input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.explain-input {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.explain-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.explain-button {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  align-self: flex-start;
+}
+
+.explain-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.explain-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.explanation-results {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.prediction-summary {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+.prediction-summary h4 {
+  color: #333;
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.prediction-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.prediction-label {
+  font-weight: 600;
+  color: #666;
+}
+
+.prediction-value {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.prediction-value.positive {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.prediction-value.negative {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.prediction-value.neutral {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.probabilities {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.probability-item {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.feature-contributions {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+.feature-contributions h4 {
+  color: #333;
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feature-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.feature-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.feature-contribution {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.feature-contribution.positive {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.feature-contribution.negative {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.contributors-section {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+}
+
+.contributors-section h4 {
+  color: #333;
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.contributors-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.contributor-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.contributor-badge.positive {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.contributor-badge.negative {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.features-section h4 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+.features-table {
+  margin-top: 24px;
+}
+
+.features-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.features-table th,
+.features-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.features-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #333;
+}
+
+.features-table tr:hover {
+  background: #f8fafc;
+}
+
+.error-message {
+  padding: 12px 16px;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+

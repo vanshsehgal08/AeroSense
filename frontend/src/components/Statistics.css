@@ -1,0 +1,158 @@
+.statistics {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.statistics h2 {
+  color: #333;
+  margin-bottom: 24px;
+  font-size: 24px;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.refresh-button {
+  padding: 8px 16px;
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  transition: all 0.3s;
+}
+
+.refresh-button:hover {
+  background: #e2e8f0;
+  transform: translateY(-2px);
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
+}
+
+.error-message {
+  padding: 16px;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.stats-section {
+  padding: 24px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 2px solid #e5e7eb;
+  margin-bottom: 24px;
+}
+
+.dataset-header {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.stats-section h3 {
+  color: #333;
+  margin-bottom: 8px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.dataset-description {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+.dataset-file {
+  color: #667eea;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #667eea;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.info-card {
+  border: 2px solid #667eea;
+  background: #f0f4ff;
+}
+
+.stat-detail {
+  font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+  font-weight: normal;
+  text-transform: none;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 12px;
+  background: #e0e7ff;
+  border-color: #667eea;
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
+}
+
+

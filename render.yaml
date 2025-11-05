@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: aerosense
+    env: python
+    buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm && cd frontend && npm install && npm run build && cd ..
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: PORT
+        value: 10000
+      - key: FLASK_ENV
+        value: production
+    healthCheckPath: /api/health
+
