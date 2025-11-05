@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { sentimentAPI } from '../services/api';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import './AirlineInsights.css';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
@@ -43,13 +43,6 @@ const AirlineInsights = () => {
     }));
   };
 
-  const preparePositivesData = () => {
-    if (!insights?.positive_aspects?.top_5_positives) return [];
-    return Object.entries(insights.positive_aspects.top_5_positives).map(([aspect, count]) => ({
-      name: aspect,
-      value: count,
-    }));
-  };
 
   const prepareSentimentData = () => {
     if (!insights?.sentiment_distribution) return [];
@@ -69,14 +62,6 @@ const AirlineInsights = () => {
       }));
   };
 
-  const prepareTrendData = () => {
-    if (!insights?.trends?.monthly_trend) return [];
-    return insights.trends.monthly_trend.map(item => ({
-      month: item.month,
-      rating: item.avg_rating,
-      positive: item.positive_percentage,
-    }));
-  };
 
   const [activeView, setActiveView] = useState('overview');
 

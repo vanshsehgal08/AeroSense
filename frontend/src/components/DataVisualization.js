@@ -47,7 +47,7 @@ const DataVisualization = () => {
     if (!stats) return null;
 
     // Find the dataset with sentiment distribution
-    for (const [key, data] of Object.entries(stats)) {
+    for (const [, data] of Object.entries(stats)) {
       if (data.sentiment_distribution) {
         return Object.entries(data.sentiment_distribution).map(([name, value]) => ({
           name,
@@ -61,7 +61,7 @@ const DataVisualization = () => {
   const getCategoryData = () => {
     if (!stats) return null;
 
-    for (const [key, data] of Object.entries(stats)) {
+    for (const [, data] of Object.entries(stats)) {
       if (data.category_distribution) {
         return Object.entries(data.category_distribution)
           .sort(([, a], [, b]) => b - a)
@@ -78,7 +78,7 @@ const DataVisualization = () => {
   const getRatingData = () => {
     if (!stats) return null;
 
-    for (const [key, data] of Object.entries(stats)) {
+    for (const [, data] of Object.entries(stats)) {
       if (data.rating_distribution) {
         return Object.entries(data.rating_distribution)
           .sort(([a], [b]) => Number(a) - Number(b))
