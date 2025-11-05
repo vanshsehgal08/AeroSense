@@ -62,6 +62,7 @@ htmlcov/
 .DS_Store
 Thumbs.db
 tfidf_features.csv
+bag_of_words.csv
 
 # Logs
 *.log
