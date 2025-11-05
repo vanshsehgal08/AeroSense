@@ -16,6 +16,7 @@ from nltk.tokenize import word_tokenize
 import json
 from datetime import datetime
 
+
 # Import advanced modules
 from ml_models import ModelManager, PARAM_GRIDS
 from advanced_nlp import AdvancedNLP
@@ -64,6 +65,21 @@ COMPLAINT_KEYWORDS = {
     'Technical Issues': ['website', 'crash', 'app', 'error', 'technical'],
 }
 
+POSITIVE_INDICATORS = [
+    'excellent', 'outstanding', 'amazing', 'wonderful', 'fantastic', 'perfect', 'flawless',
+    'impressed', 'love', 'loved', 'great', 'best', 'awesome', 'brilliant', 'superb',
+    'exceptional', 'delighted', 'pleased', 'satisfied', 'thrilled', 'happy', 'glad',
+    'recommend', 'highly recommend', 'exceeded expectations', 'above and beyond',
+    'top notch', 'premium', 'luxury', 'outstanding service', 'stellar', 'phenomenal'
+]
+
+NEGATIVE_INDICATORS = [
+    'terrible', 'awful', 'horrible', 'worst', 'disappointed', 'disappointing', 'disgusting',
+    'hate', 'hated', 'poor', 'bad', 'very bad', 'pathetic', 'ridiculous', 'unacceptable',
+    'frustrated', 'angry', 'upset', 'complaint', 'complain', 'refund', 'scam', 'fraud',
+    'waste', 'waste of money', 'never again', 'avoid', 'warning', 'beware', 'disaster'
+]
+
 def preprocess_text(text):
     """Preprocess text for sentiment analysis"""
     if not isinstance(text, str) or pd.isna(text):
@@ -98,6 +114,96 @@ def assign_category(text):
                 if keyword in text:
                     return category
     return 'Other'
+
+def get_sentiment_boost(text):
+    """
+    Analyze text for strong positive/negative indicators to boost confidence
+    Returns: 'positive' if strong positive indicators found, 'negative' if negative, None otherwise
+    """
+    if not isinstance(text, str):
+        return None
+    
+    text_lower = text.lower()
+    
+    # Count positive and negative indicators
+    positive_count = sum(1 for indicator in POSITIVE_INDICATORS if indicator in text_lower)
+    negative_count = sum(1 for indicator in NEGATIVE_INDICATORS if indicator in text_lower)
+    
+    # Strong signal if 3+ indicators found
+    if positive_count >= 3 and negative_count == 0:
+        return 'positive'
+    elif negative_count >= 3 and positive_count == 0:
+        return 'negative'
+    elif positive_count >= 2 and positive_count > negative_count * 2:
+        return 'positive'
+    elif negative_count >= 2 and negative_count > positive_count * 2:
+        return 'negative'
+    
+    return None
+
+def is_valid_review(text):
+    if not isinstance(text, str) or len(text.strip()) < 10:
+        return False
+    
+    text_lower = text.lower().strip()
+    text_no_space = text_lower.replace(' ', '').replace('.', '').replace(',', '').replace('!', '').replace('?', '')
+    
+    if len(text_no_space) < 10:
+        return False
+    
+    unique_chars = set(text_no_space)
+    if len(unique_chars) < 5:
+        return False
+    
+    consonant_count = sum(1 for c in text_no_space if c.isalpha() and c not in 'aeiou')
+    vowel_count = sum(1 for c in text_no_space if c in 'aeiou')
+    
+    if len(text_no_space) > 8 and vowel_count == 0:
+        return False
+    
+    if len(text_no_space) > 8 and consonant_count > 0:
+        if vowel_count == 0 or (vowel_count / max(consonant_count, 1)) < 0.15:
+            return False
+    
+    repeated_chars = sum(1 for i in range(len(text_no_space)-2) if text_no_space[i] == text_no_space[i+1] == text_no_space[i+2])
+    if repeated_chars > len(text_no_space) * 0.12:
+        return False
+    
+    words = text_lower.split()
+    if len(words) < 3:
+        return False
+    
+    if len(words) == 1 and len(words[0]) > 8:
+        avg_word_len = len(words[0])
+        if avg_word_len > 10 and vowel_count == 0:
+            return False
+    
+    airline_keywords = [
+        'flight', 'airline', 'airplane', 'airport', 'booking', 'ticket', 'check-in', 'checkin',
+        'passenger', 'cabin', 'crew', 'pilot', 'steward', 'attendant', 'luggage', 'baggage',
+        'delay', 'departure', 'arrival', 'gate', 'boarding', 'seat', 'meal', 'service',
+        'aircraft', 'takeoff', 'landing', 'terminal', 'security', 'customs', 'immigration'
+    ]
+    
+    review_indicators = [
+        'experience', 'review', 'recommend', 'satisfied', 'disappointed', 'excellent',
+        'poor', 'good', 'bad', 'great', 'terrible', 'amazing', 'awful', 'wonderful',
+        'horrible', 'fantastic', 'worst', 'best', 'love', 'hate', 'enjoy', 'dislike'
+    ]
+    
+    has_airline_keyword = any(keyword in text_lower for keyword in airline_keywords)
+    has_review_indicator = any(indicator in text_lower for indicator in review_indicators)
+    
+    if has_airline_keyword or has_review_indicator:
+        return True
+    
+    if len(words) >= 15:
+        avg_word_len = sum(len(w) for w in words) / len(words)
+        if 2.5 <= avg_word_len <= 8.0:
+            return True
+    
+    return False
+
 
 def load_or_train_model():
     """Load existing model or train a new one"""
@@ -189,9 +295,15 @@ def predict():
     if not review_text:
         return jsonify({'error': 'Review text is required'}), 400
     
+    if not is_valid_review(review_text):
+        return jsonify({'error': 'This is not a valid airline review. Please provide a meaningful review about your flight experience.'}), 400
+    
     try:
-        # Preprocess and predict
-        review_tfidf = tfidf_vectorizer.transform([review_text])
+        # Preprocess text before prediction (critical: model was trained on preprocessed text)
+        preprocessed_text = preprocess_text(review_text)
+        
+        # Transform preprocessed text
+        review_tfidf = tfidf_vectorizer.transform([preprocessed_text])
         probabilities = model.predict_proba(review_tfidf)[0]
         classes = model.classes_
         
@@ -203,21 +315,33 @@ def predict():
         # Create probability dict
         prob_dict = {cls: float(prob) for cls, prob in zip(classes, probabilities)}
         
-        # Improved prediction: Use probability threshold for neutral
-        # If max probability is low or neutral has significant probability, check for neutral
+        # Prediction logic: Trust the model when it's confident
         max_prob = float(np.max(probabilities))
         max_idx = int(np.argmax(probabilities))
         predicted_class = classes[max_idx]
         
-        # Check if neutral is in classes and has reasonable probability
+        sentiment_boost = get_sentiment_boost(review_text)
         if 'Neutral' in classes:
             neutral_idx = list(classes).index('Neutral')
             neutral_prob = probabilities[neutral_idx]
             
-            # If neutral probability is high (>0.3) and max prob is not very confident (<0.7)
-            # or if neutral is the highest, use neutral
-            if (neutral_prob > 0.3 and max_prob < 0.7) or predicted_class == 'Neutral':
-                prediction = 'Neutral'
+            sorted_indices = np.argsort(probabilities)[::-1]
+            second_highest_prob = float(probabilities[sorted_indices[1]]) if len(sorted_indices) > 1 else 0
+            
+            if max_prob > 0.80:
+                prediction = predicted_class
+            elif max_prob > 0.35 and (max_prob - second_highest_prob) < 0.05 and sentiment_boost:
+                if sentiment_boost == 'positive' and 'Positive' in classes:
+                    prediction = 'Positive'
+                elif sentiment_boost == 'negative' and 'Negative' in classes:
+                    prediction = 'Negative'
+                else:
+                    prediction = predicted_class
+            elif max_prob < 0.55 and neutral_prob > 0.35 and predicted_class != 'Neutral':
+                if neutral_prob > (max_prob - 0.1):
+                    prediction = 'Neutral'
+                else:
+                    prediction = predicted_class
             else:
                 prediction = predicted_class
         else:
@@ -226,12 +350,67 @@ def predict():
         # Get category
         category = assign_category(review_text)
         
-        return jsonify({
+        # Calculate dynamic feature importance for this specific prediction
+        feature_importance = []
+        try:
+            if hasattr(model, 'coef_'):
+                # Direct calculation using coefficients and TF-IDF values
+                feature_names = tfidf_vectorizer.get_feature_names_out()
+                text_features = review_tfidf.toarray()[0]
+                non_zero_indices = np.nonzero(text_features)[0]
+                
+                if len(non_zero_indices) > 0:
+                    predicted_class_idx = list(classes).index(prediction)
+                    coefs = model.coef_[predicted_class_idx]
+                    
+                    feature_scores = []
+                    for idx in non_zero_indices:
+                        score = float(coefs[idx]) * float(text_features[idx])
+                        if abs(score) > 0.0001:  # Only include significant contributions
+                            feature_scores.append({
+                                'feature': str(feature_names[idx]),
+                                'importance': score
+                            })
+                    
+                    if len(feature_scores) > 0:
+                        feature_scores.sort(key=lambda x: abs(x['importance']), reverse=True)
+                        feature_importance = feature_scores[:15]
+                        print(f"Calculated {len(feature_importance)} feature importance items")
+                    else:
+                        print("No significant feature contributions found")
+                else:
+                    print("No non-zero features found in text")
+            else:
+                # Try using ModelInterpreter as fallback
+                interpreter = ModelInterpreter(model, tfidf_vectorizer)
+                explanation = interpreter.explain_prediction(preprocessed_text, top_features=15)
+                if explanation and 'top_features' in explanation and len(explanation['top_features']) > 0:
+                    feature_importance = [
+                        {
+                            'feature': f['feature'],
+                            'importance': f['contribution']
+                        }
+                        for f in explanation['top_features']
+                    ]
+        except Exception as e:
+            import traceback
+            print(f"Error calculating feature importance: {e}")
+            traceback.print_exc()
+        
+        response_data = {
             'sentiment': prediction,
             'probabilities': prob_dict,
             'category': category,
             'review': review_text
-        })
+        }
+        
+        if len(feature_importance) > 0:
+            response_data['feature_importance'] = feature_importance
+            print(f"Returning {len(feature_importance)} feature importance items in response")
+        else:
+            print("Warning: Feature importance is empty, not including in response")
+        
+        return jsonify(response_data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -251,7 +430,21 @@ def predict_batch():
         results = []
         classes = model.classes_
         for review in reviews:
-            review_tfidf = tfidf_vectorizer.transform([review])
+            if not is_valid_review(review):
+                results.append({
+                    'review': review,
+                    'sentiment': None,
+                    'error': 'Not a valid airline review',
+                    'probabilities': {},
+                    'category': None
+                })
+                continue
+            
+            # Preprocess text before prediction (critical: model was trained on preprocessed text)
+            preprocessed_text = preprocess_text(review)
+            
+            # Transform preprocessed text
+            review_tfidf = tfidf_vectorizer.transform([preprocessed_text])
             probabilities = model.predict_proba(review_tfidf)[0]
             
             # Ensure probabilities is a numpy array (not sparse)
@@ -259,20 +452,33 @@ def predict_batch():
                 probabilities = probabilities.toarray()[0]
             probabilities = np.array(probabilities).flatten()
             
-            # Improved prediction: Use probability threshold for neutral
+            # Prediction logic: Trust the model when it's confident
             max_prob = float(np.max(probabilities))
             max_idx = int(np.argmax(probabilities))
             predicted_class = classes[max_idx]
             
-            # Check if neutral is in classes and has reasonable probability
+            sentiment_boost = get_sentiment_boost(review)
             if 'Neutral' in classes:
                 neutral_idx = list(classes).index('Neutral')
                 neutral_prob = probabilities[neutral_idx]
                 
-                # If neutral probability is high (>0.3) and max prob is not very confident (<0.7)
-                # or if neutral is the highest, use neutral
-                if (neutral_prob > 0.3 and max_prob < 0.7) or predicted_class == 'Neutral':
-                    prediction = 'Neutral'
+                sorted_indices = np.argsort(probabilities)[::-1]
+                second_highest_prob = float(probabilities[sorted_indices[1]]) if len(sorted_indices) > 1 else 0
+                
+                if max_prob > 0.80:
+                    prediction = predicted_class
+                elif max_prob > 0.35 and (max_prob - second_highest_prob) < 0.05 and sentiment_boost:
+                    if sentiment_boost == 'positive' and 'Positive' in classes:
+                        prediction = 'Positive'
+                    elif sentiment_boost == 'negative' and 'Negative' in classes:
+                        prediction = 'Negative'
+                    else:
+                        prediction = predicted_class
+                elif max_prob < 0.55 and neutral_prob > 0.35 and predicted_class != 'Neutral':
+                    if neutral_prob > (max_prob - 0.1):
+                        prediction = 'Neutral'
+                    else:
+                        prediction = predicted_class
                 else:
                     prediction = predicted_class
             else:
@@ -312,17 +518,33 @@ def upload_file():
         
         # Preprocess reviews
         df['cleaned_review'] = df['Review'].apply(preprocess_text)
+        df['is_valid'] = df['Review'].apply(lambda x: is_valid_review(str(x)))
         
         # Predict sentiments if model is trained
         if model_trained:
-            reviews_list = df['Review'].tolist()
-            review_tfidf = tfidf_vectorizer.transform(reviews_list)
+            # Filter valid reviews for prediction
+            valid_df = df[df['is_valid']].copy()
+            
+            if len(valid_df) == 0:
+                return jsonify({'error': 'No valid airline reviews found in the file'}), 400
+            
+            # Use preprocessed reviews for prediction (critical: model was trained on preprocessed text)
+            cleaned_reviews_list = valid_df['cleaned_review'].tolist()
+            review_tfidf = tfidf_vectorizer.transform(cleaned_reviews_list)
             probabilities_all = model.predict_proba(review_tfidf)
             classes = model.classes_
             
-            # Improved predictions with neutral threshold
+            # Improved predictions with better neutral threshold logic
             predictions = []
-            for probs in probabilities_all:
+            valid_idx = 0
+            for idx in range(len(df)):
+                if not df.iloc[idx]['is_valid']:
+                    predictions.append('Invalid Review')
+                    continue
+                
+                probs = probabilities_all[valid_idx]
+                valid_idx += 1
+                
                 # Ensure probs is a numpy array (not sparse)
                 if hasattr(probs, 'toarray'):
                     probs = probs.toarray()[0]
@@ -332,15 +554,30 @@ def upload_file():
                 max_idx = int(np.argmax(probs))
                 predicted_class = classes[max_idx]
                 
-                # Check if neutral is in classes and has reasonable probability
+                original_review = df['Review'].iloc[idx] if 'Review' in df.columns else ''
+                sentiment_boost = get_sentiment_boost(original_review)
+                
                 if 'Neutral' in classes:
                     neutral_idx = list(classes).index('Neutral')
                     neutral_prob = probs[neutral_idx]
                     
-                    # If neutral probability is high (>0.3) and max prob is not very confident (<0.7)
-                    # or if neutral is the highest, use neutral
-                    if (neutral_prob > 0.3 and max_prob < 0.7) or predicted_class == 'Neutral':
-                        predictions.append('Neutral')
+                    sorted_indices = np.argsort(probs)[::-1]
+                    second_highest_prob = float(probs[sorted_indices[1]]) if len(sorted_indices) > 1 else 0
+                    
+                    if max_prob > 0.80:
+                        predictions.append(predicted_class)
+                    elif max_prob > 0.35 and (max_prob - second_highest_prob) < 0.05 and sentiment_boost:
+                        if sentiment_boost == 'positive' and 'Positive' in classes:
+                            predictions.append('Positive')
+                        elif sentiment_boost == 'negative' and 'Negative' in classes:
+                            predictions.append('Negative')
+                        else:
+                            predictions.append(predicted_class)
+                    elif max_prob < 0.55 and neutral_prob > 0.35 and predicted_class != 'Neutral':
+                        if neutral_prob > (max_prob - 0.1):
+                            predictions.append('Neutral')
+                        else:
+                            predictions.append(predicted_class)
                     else:
                         predictions.append(predicted_class)
                 else:
@@ -1052,10 +1289,223 @@ def scrape_and_analyze():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/airline/compare', methods=['POST'])
+def compare_airlines():
+    """Compare multiple airlines using the trained model"""
+    try:
+        if not model_trained:
+            return jsonify({'error': 'Model not trained yet. Please train the model first.'}), 400
+        
+        data = request.json
+        airline_names = data.get('airline_names', [])
+        max_pages = data.get('max_pages', 3)
+        
+        if not airline_names or len(airline_names) < 2:
+            return jsonify({'error': 'Please provide at least 2 airlines to compare'}), 400
+        
+        comparison_results = {}
+        all_airlines_data = []
+        
+        # Scrape and analyze each airline
+        for airline_name in airline_names:
+            try:
+                # Scrape reviews
+                df = airline_scraper.scrape_trustpilot_reviews(airline_name, max_pages)
+                
+                if df.empty:
+                    comparison_results[airline_name] = {
+                        'error': 'No reviews found',
+                        'total_reviews': 0
+                    }
+                    continue
+                
+                # Use model to predict sentiment for all reviews
+                valid_reviews = []
+                predictions = []
+                probabilities_list = []
+                
+                for review in df['Review'].tolist():
+                    if not is_valid_review(str(review)):
+                        continue
+                    
+                    try:
+                        # Preprocess and predict
+                        preprocessed_text = preprocess_text(str(review))
+                        review_tfidf = tfidf_vectorizer.transform([preprocessed_text])
+                        probs = model.predict_proba(review_tfidf)[0]
+                        
+                        # Ensure probs is numpy array
+                        if hasattr(probs, 'toarray'):
+                            probs = probs.toarray()[0]
+                        probs = np.array(probs).flatten()
+                        
+                        # Get prediction
+                        max_idx = int(np.argmax(probs))
+                        predicted_class = model.classes_[max_idx]
+                        
+                        # Apply prediction logic
+                        sentiment_boost = get_sentiment_boost(str(review))
+                        
+                        if 'Neutral' in model.classes_:
+                            neutral_idx = list(model.classes_).index('Neutral')
+                            neutral_prob = probs[neutral_idx]
+                            max_prob = float(np.max(probs))
+                            
+                            sorted_indices = np.argsort(probs)[::-1]
+                            second_highest_prob = float(probs[sorted_indices[1]]) if len(sorted_indices) > 1 else 0
+                            
+                            if max_prob > 0.80:
+                                final_prediction = predicted_class
+                            elif max_prob > 0.35 and (max_prob - second_highest_prob) < 0.05 and sentiment_boost:
+                                if sentiment_boost == 'positive' and 'Positive' in model.classes_:
+                                    final_prediction = 'Positive'
+                                elif sentiment_boost == 'negative' and 'Negative' in model.classes_:
+                                    final_prediction = 'Negative'
+                                else:
+                                    final_prediction = predicted_class
+                            elif max_prob < 0.55 and neutral_prob > 0.35 and predicted_class != 'Neutral':
+                                if neutral_prob > (max_prob - 0.1):
+                                    final_prediction = 'Neutral'
+                                else:
+                                    final_prediction = predicted_class
+                            else:
+                                final_prediction = predicted_class
+                        else:
+                            final_prediction = predicted_class
+                        
+                        valid_reviews.append(review)
+                        predictions.append(final_prediction)
+                        probabilities_list.append({cls: float(prob) for cls, prob in zip(model.classes_, probs)})
+                        
+                    except Exception as e:
+                        print(f"Error predicting for review: {e}")
+                        continue
+                
+                if len(valid_reviews) == 0:
+                    comparison_results[airline_name] = {
+                        'error': 'No valid reviews found for sentiment analysis',
+                        'total_reviews': len(df)
+                    }
+                    continue
+                
+                # Add predictions to dataframe
+                df_predictions = df[df['Review'].isin(valid_reviews)].copy()
+                df_predictions['Model_Predicted_Sentiment'] = predictions
+                df_predictions['Model_Confidence'] = [max(probs.values()) for probs in probabilities_list]
+                
+                # Calculate statistics
+                sentiment_dist = pd.Series(predictions).value_counts().to_dict()
+                avg_confidence = np.mean([max(probs.values()) for probs in probabilities_list])
+                avg_rating = df_predictions['Rating'].mean()
+                
+                # Get category breakdown
+                df_predictions['Category'] = df_predictions['Review'].apply(assign_category)
+                category_dist = df_predictions['Category'].value_counts().to_dict()
+                
+                # Analyze top issues using model predictions
+                # Add 'Sentiment' column for _identify_issues method compatibility
+                df_predictions['Sentiment'] = df_predictions['Model_Predicted_Sentiment']
+                
+                # Check for negative reviews using the Sentiment column
+                negative_reviews_df = df_predictions[df_predictions['Sentiment'] == 'Negative']
+                if len(negative_reviews_df) > 0:
+                    try:
+                        top_issues = airline_analyzer._identify_issues(df_predictions)
+                    except Exception as e:
+                        print(f"Error identifying issues: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        top_issues = {'top_5_issues': {}}
+                else:
+                    top_issues = {'top_5_issues': {}}
+                
+                # Store results
+                comparison_results[airline_name] = {
+                    'airline': airline_name,
+                    'total_reviews': len(df),
+                    'valid_reviews': len(valid_reviews),
+                    'sentiment_distribution': sentiment_dist,
+                    'model_confidence': float(avg_confidence),
+                    'average_rating': float(avg_rating),
+                    'category_distribution': category_dist,
+                    'top_issues': top_issues.get('top_5_issues', {}),
+                    'positive_percentage': (sentiment_dist.get('Positive', 0) / len(valid_reviews) * 100) if len(valid_reviews) > 0 else 0,
+                    'negative_percentage': (sentiment_dist.get('Negative', 0) / len(valid_reviews) * 100) if len(valid_reviews) > 0 else 0,
+                    'neutral_percentage': (sentiment_dist.get('Neutral', 0) / len(valid_reviews) * 100) if len(valid_reviews) > 0 else 0,
+                }
+                
+                all_airlines_data.append({
+                    'airline': airline_name,
+                    'data': df_predictions
+                })
+                
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                comparison_results[airline_name] = {
+                    'error': str(e),
+                    'total_reviews': 0
+                }
+        
+        # Generate comparison summary
+        comparison_summary = {
+            'airlines_compared': len([r for r in comparison_results.values() if 'error' not in r]),
+            'best_positive': None,
+            'best_rating': None,
+            'most_issues': None,
+            'highest_confidence': None
+        }
+        
+        valid_results = {k: v for k, v in comparison_results.items() if 'error' not in v}
+        
+        if valid_results:
+            # Find best positive percentage
+            best_positive = max(valid_results.items(), key=lambda x: x[1].get('positive_percentage', 0))
+            comparison_summary['best_positive'] = {
+                'airline': best_positive[0],
+                'positive_percentage': best_positive[1]['positive_percentage']
+            }
+            
+            # Find best rating
+            best_rating = max(valid_results.items(), key=lambda x: x[1].get('average_rating', 0))
+            comparison_summary['best_rating'] = {
+                'airline': best_rating[0],
+                'average_rating': best_rating[1]['average_rating']
+            }
+            
+            # Find most issues (highest negative percentage)
+            most_issues = max(valid_results.items(), key=lambda x: x[1].get('negative_percentage', 0))
+            comparison_summary['most_issues'] = {
+                'airline': most_issues[0],
+                'negative_percentage': most_issues[1]['negative_percentage']
+            }
+            
+            # Highest model confidence
+            highest_conf = max(valid_results.items(), key=lambda x: x[1].get('model_confidence', 0))
+            comparison_summary['highest_confidence'] = {
+                'airline': highest_conf[0],
+                'confidence': highest_conf[1]['model_confidence']
+            }
+        
+        return jsonify({
+            'comparison': comparison_results,
+            'summary': comparison_summary,
+            'total_airlines': len(airline_names)
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
     """Serve React app"""
+    # Don't serve static files for API routes
+    if path.startswith('api/'):
+        return jsonify({'error': 'API endpoint not found'}), 404
+    
     if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
     else:

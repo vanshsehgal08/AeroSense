@@ -31,6 +31,7 @@ class AirlineReviewScraper:
             'airasia': 'https://www.trustpilot.com/review/www.airasia.com',
             'qatar_airways': 'https://www.trustpilot.com/review/www.qatarairways.com',
             'monarch_air_group': 'https://www.trustpilot.com/review/monarchairgroup.com',
+            'flyusa': 'https://www.trustpilot.com/review/flyusa.com',
         }
     
     def scrape_trustpilot_reviews(self, airline_name, max_pages=5):
@@ -248,6 +249,23 @@ class AirlineInsightsAnalyzer:
     
     def _identify_issues(self, df):
         """Identify common issues and failures"""
+        # Check if required columns exist
+        if 'Sentiment' not in df.columns:
+            print(f"Warning: 'Sentiment' column not found in dataframe. Available columns: {df.columns.tolist()}")
+            return {
+                'top_5_issues': {},
+                'all_issues': {},
+                'total_negative_reviews': 0
+            }
+        
+        if 'Review' not in df.columns:
+            print(f"Warning: 'Review' column not found in dataframe. Available columns: {df.columns.tolist()}")
+            return {
+                'top_5_issues': {},
+                'all_issues': {},
+                'total_negative_reviews': 0
+            }
+        
         negative_reviews = df[df['Sentiment'] == 'Negative']['Review'].tolist()
         
         issue_counts = {}

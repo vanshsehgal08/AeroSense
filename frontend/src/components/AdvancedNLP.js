@@ -115,19 +115,22 @@ const AdvancedNLP = () => {
             <div className="results-section">
               <h3>📚 Topic Modeling</h3>
               <div className="topics-results">
-                {results.topics.topics?.map((topic, idx) => (
-                  <div key={idx} className="topic-card">
-                    <h5>Topic {topic.topic_id + 1}</h5>
-                    <div className="topic-words">
-                      {topic.words?.map((word, i) => (
-                        <span key={i} className="topic-word">
-                          {word} ({topic.scores[i]?.toFixed(3)})
-                        </span>
-                      ))}
+                {results.topics.error ? (
+                  <div className="error-text">{results.topics.error}</div>
+                ) : (
+                  (Array.isArray(results.topics) ? results.topics : (results.topics.topics || [])).map((topic, idx) => (
+                    <div key={idx} className="topic-card">
+                      <h5>Topic {topic.topic_id + 1}</h5>
+                      <div className="topic-words">
+                        {topic.words?.map((word, i) => (
+                          <span key={i} className="topic-word">
+                            {word} ({topic.scores?.[i]?.toFixed(3) || '0.000'})
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {results.topics.error && <div className="error-text">{results.topics.error}</div>}
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -137,15 +140,18 @@ const AdvancedNLP = () => {
             <div className="results-section">
               <h3>🔑 Keyword Extraction</h3>
               <div className="keywords-results">
-                <div className="keywords-list">
-                  {results.keywords.keywords?.map((kw, idx) => (
-                    <div key={idx} className="keyword-item">
-                      <span className="keyword-word">{kw.word}</span>
-                      <span className="keyword-score">{kw.score.toFixed(4)}</span>
-                    </div>
-                  ))}
-                </div>
-                {results.keywords.error && <div className="error-text">{results.keywords.error}</div>}
+                {results.keywords.error ? (
+                  <div className="error-text">{results.keywords.error}</div>
+                ) : (
+                  <div className="keywords-list">
+                    {(Array.isArray(results.keywords) ? results.keywords : (results.keywords.keywords || [])).map((kw, idx) => (
+                      <div key={idx} className="keyword-item">
+                        <span className="keyword-word">{kw.word}</span>
+                        <span className="keyword-score">{kw.score?.toFixed(4) || kw}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -155,12 +161,15 @@ const AdvancedNLP = () => {
             <div className="results-section">
               <h3>🎯 Aspect Extraction</h3>
               <div className="aspects-results">
-                <div className="aspects-list">
-                  {results.aspects.aspects?.map((aspect, idx) => (
-                    <span key={idx} className="aspect-badge">{aspect}</span>
-                  ))}
-                </div>
-                {results.aspects.error && <div className="error-text">{results.aspects.error}</div>}
+                {results.aspects.error ? (
+                  <div className="error-text">{results.aspects.error}</div>
+                ) : (
+                  <div className="aspects-list">
+                    {(Array.isArray(results.aspects) ? results.aspects : (results.aspects.aspects || [])).map((aspect, idx) => (
+                      <span key={idx} className="aspect-badge">{aspect}</span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -197,75 +206,116 @@ const AdvancedNLP = () => {
 
     // Single feature mode (backward compatibility)
     switch (activeFeature) {
-      case 'topics':
+      case 'topics': {
+        // Handle both array format and object with topics property
+        const topicsData = Array.isArray(results.topics)
+          ? results.topics
+          : (results.topics?.topics || []);
+        
         return (
           <div className="topics-results">
             <h4>Extracted Topics</h4>
-            {results.topics?.map((topic, idx) => (
-              <div key={idx} className="topic-card">
-                <h5>Topic {topic.topic_id + 1}</h5>
-                <div className="topic-words">
-                  {topic.words?.map((word, i) => (
-                    <span key={i} className="topic-word">
-                      {word} ({topic.scores[i]?.toFixed(3)})
-                    </span>
-                  ))}
+            {results.topics?.error ? (
+              <div className="error-text">{results.topics.error}</div>
+            ) : (
+              topicsData.map((topic, idx) => (
+                <div key={idx} className="topic-card">
+                  <h5>Topic {topic.topic_id + 1}</h5>
+                  <div className="topic-words">
+                    {topic.words?.map((word, i) => (
+                      <span key={i} className="topic-word">
+                        {word} ({topic.scores?.[i]?.toFixed(3) || '0.000'})
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         );
+      }
 
-      case 'keywords':
+      case 'keywords': {
+        // Handle both array format and object with keywords property
+        const keywordsData = Array.isArray(results.keywords) 
+          ? results.keywords 
+          : (results.keywords?.keywords || []);
+        
         return (
           <div className="keywords-results">
             <h4>Top Keywords</h4>
-            <div className="keywords-list">
-              {results.keywords?.map((kw, idx) => (
-                <div key={idx} className="keyword-item">
-                  <span className="keyword-word">{kw.word}</span>
-                  <span className="keyword-score">{kw.score.toFixed(4)}</span>
-                </div>
-              ))}
-            </div>
+            {results.keywords?.error ? (
+              <div className="error-text">{results.keywords.error}</div>
+            ) : (
+              <div className="keywords-list">
+                {keywordsData.map((kw, idx) => (
+                  <div key={idx} className="keyword-item">
+                    <span className="keyword-word">{kw.word}</span>
+                    <span className="keyword-score">{kw.score?.toFixed(4) || kw}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
+      }
 
-      case 'aspects':
+      case 'aspects': {
+        // Handle both array format and object with aspects property
+        const aspectsData = Array.isArray(results.aspects)
+          ? results.aspects
+          : (results.aspects?.aspects || []);
+        
         return (
           <div className="aspects-results">
             <h4>Extracted Aspects</h4>
-            <div className="aspects-list">
-              {results.aspects?.map((aspect, idx) => (
-                <span key={idx} className="aspect-badge">{aspect}</span>
-              ))}
-            </div>
+            {results.aspects?.error ? (
+              <div className="error-text">{results.aspects.error}</div>
+            ) : (
+              <div className="aspects-list">
+                {aspectsData.map((aspect, idx) => (
+                  <span key={idx} className="aspect-badge">{aspect}</span>
+                ))}
+              </div>
+            )}
           </div>
         );
+      }
 
-      case 'emotions':
+      case 'emotions': {
+        // Handle object format with emotions property
+        const emotionsData = results.emotions?.emotions || results.emotions || {};
+        const dominantEmotion = results.emotions?.dominant_emotion || results.dominant_emotion;
+        
         return (
           <div className="emotions-results">
             <h4>Emotion Analysis</h4>
-            <div className="dominant-emotion">
-              Dominant Emotion: <strong>{results.dominant_emotion}</strong>
-            </div>
-            <div className="emotions-grid">
-              {Object.entries(results.emotions || {}).map(([emotion, score]) => (
-                <div key={emotion} className="emotion-item">
-                  <div className="emotion-label">{emotion}</div>
-                  <div className="emotion-bar">
-                    <div
-                      className="emotion-fill"
-                      style={{ width: `${score * 100}%` }}
-                    />
-                  </div>
-                  <div className="emotion-score">{(score * 100).toFixed(1)}%</div>
+            {results.emotions?.error ? (
+              <div className="error-text">{results.emotions.error}</div>
+            ) : (
+              <>
+                <div className="dominant-emotion">
+                  Dominant Emotion: <strong>{dominantEmotion || 'N/A'}</strong>
                 </div>
-              ))}
-            </div>
+                <div className="emotions-grid">
+                  {Object.entries(emotionsData).map(([emotion, score]) => (
+                    <div key={emotion} className="emotion-item">
+                      <div className="emotion-label">{emotion}</div>
+                      <div className="emotion-bar">
+                        <div
+                          className="emotion-fill"
+                          style={{ width: `${(score * 100) || 0}%` }}
+                        />
+                      </div>
+                      <div className="emotion-score">{((score || 0) * 100).toFixed(1)}%</div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         );
+      }
 
       default:
         return null;

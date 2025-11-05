@@ -8,6 +8,7 @@ import DataVisualization from './DataVisualization';
 import ModelComparison from './ModelComparison';
 import AdvancedNLP from './AdvancedNLP';
 import AirlineInsights from './AirlineInsights';
+import CompareAirlines from './CompareAirlines';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -32,14 +33,15 @@ const Dashboard = () => {
   };
 
   const tabs = [
-    { id: 'predict', label: 'Predict', icon: '🔮' },
+    { id: 'airline', label: 'Airline Insights', icon: '✈️' },
+    { id: 'compare-airlines', label: 'Compare Airlines', icon: '🔀' },
     { id: 'upload', label: 'Upload', icon: '📤' },
-    { id: 'stats', label: 'Statistics', icon: '📊' },
-    { id: 'visualize', label: 'Visualizations', icon: '📈' },
     { id: 'train', label: 'Train', icon: '🎓' },
     { id: 'compare', label: 'Compare Models', icon: '⚖️' },
     { id: 'nlp', label: 'Advanced NLP', icon: '🧠' },
-    { id: 'airline', label: 'Airline Insights', icon: '✈️' },
+    { id: 'stats', label: 'Statistics', icon: '📊' },
+    { id: 'visualize', label: 'Visualizations', icon: '📈' },
+    { id: 'predict', label: 'Predict', icon: '🔮' },
   ];
 
   return (
@@ -82,6 +84,7 @@ const Dashboard = () => {
         {activeTab === 'compare' && <ModelComparison />}
         {activeTab === 'nlp' && <AdvancedNLP />}
         {activeTab === 'airline' && <AirlineInsights />}
+        {activeTab === 'compare-airlines' && <CompareAirlines />}
       </main>
     </div>
   );

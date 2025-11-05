@@ -87,6 +87,7 @@ const AirlineInsights = () => {
                 <option value="airasia">AirAsia</option>
                 <option value="qatar_airways">Qatar Airways</option>
                 <option value="monarch_air_group">Monarch Air Group</option>
+                <option value="flyusa">FlyUSA</option>
               </select>
             <input
               type="range"

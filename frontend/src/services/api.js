@@ -79,6 +79,7 @@ export const sentimentAPI = {
   scrapeAirlineReviews: (options = {}) => api.post('/airline/scrape', options),
   analyzeAirline: (options = {}) => api.post('/airline/analyze', options),
   scrapeAndAnalyze: (options = {}) => api.post('/airline/scrape-and-analyze', options),
+  compareAirlines: (options = {}) => api.post('/airline/compare', options),
 };
 
 export default api;

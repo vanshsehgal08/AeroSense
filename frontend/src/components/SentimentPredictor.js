@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { sentimentAPI } from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import './SentimentPredictor.css';
@@ -13,25 +13,6 @@ const SentimentPredictor = () => {
   const [error, setError] = useState(null);
   const [showExplanation, setShowExplanation] = useState(true);
 
-  useEffect(() => {
-    loadFeatureImportance();
-  }, []);
-
-  const loadFeatureImportance = async () => {
-    try {
-      const response = await sentimentAPI.getFeatureImportance();
-      if (response.data && response.data.feature_importance && response.data.feature_importance.length > 0) {
-        setFeatureImportance(response.data);
-      } else {
-        console.warn('Feature importance data is empty or unavailable');
-        setFeatureImportance(null);
-      }
-    } catch (err) {
-      console.error('Failed to load feature importance:', err);
-      setFeatureImportance(null);
-    }
-  };
-
   const handlePredict = async () => {
     if (!review.trim()) {
       setError('Please enter a review');
@@ -42,11 +23,17 @@ const SentimentPredictor = () => {
     setError(null);
     setResult(null);
     setExplanation(null);
+    setFeatureImportance(null);
 
     try {
-      // Get prediction
+      // Get prediction with dynamic feature importance
       const response = await sentimentAPI.predictSentiment(review);
       setResult(response.data);
+      
+      // Use dynamic feature importance from prediction response
+      if (response.data && response.data.feature_importance && response.data.feature_importance.length > 0) {
+        setFeatureImportance({ feature_importance: response.data.feature_importance });
+      }
 
       // Automatically get explanation if enabled
       if (showExplanation) {
@@ -238,7 +225,7 @@ const SentimentPredictor = () => {
             {/* Feature Importance Chart */}
             {featureImportance && featureImportance.feature_importance && featureImportance.feature_importance.length > 0 ? (
               <div className="feature-importance-section">
-                <h3>📊 Global Feature Importance</h3>
+                <h3>📊 Feature Importance (Real-time)</h3>
                 <div className="chart-container">
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart
@@ -263,11 +250,11 @@ const SentimentPredictor = () => {
                   </ResponsiveContainer>
                 </div>
               </div>
-            ) : (
+            ) : result && (
               <div className="feature-importance-section">
-                <h3>📊 Global Feature Importance</h3>
+                <h3>📊 Feature Importance (Real-time)</h3>
                 <div className="empty-state">
-                  <p>Feature importance data is not available. Please train the model first.</p>
+                  <p>Feature importance calculation is not available for this prediction.</p>
                 </div>
               </div>
             )}
